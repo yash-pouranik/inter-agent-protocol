@@ -3,257 +3,373 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Semantic AI Proxy</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    <title>Nexus | Semantic Protocol</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
     <style>
         :root {
+            --bg-dark: #09090b;
+            --surface-1: #18181b;
+            --surface-2: #27272a;
             --primary: #8b5cf6;
-            --primary-hover: #7c3aed;
-            --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
-            --glass-bg: rgba(255, 255, 255, 0.05);
-            --glass-border: rgba(255, 255, 255, 0.1);
+            --primary-glow: rgba(139, 92, 246, 0.5);
+            --accent: #06b6d4;
             --text-main: #f8fafc;
             --text-muted: #94a3b8;
+            --border: rgba(255, 255, 255, 0.1);
+            --success: #10b981;
+            --glass-bg: rgba(24, 24, 27, 0.6);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
         }
 
         body {
-            font-family: 'Inter', sans-serif;
-            background: var(--bg-gradient);
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--bg-dark);
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(139, 92, 246, 0.15) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(6, 182, 212, 0.15) 0%, transparent 40%);
             color: var(--text-main);
-            margin: 0;
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
+            padding: 2rem;
             overflow-x: hidden;
+        }
+
+        /* Ambient Animation */
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+            100% { transform: translateY(0px); }
         }
 
         .container {
             width: 100%;
-            max-width: 600px;
-            padding: 2rem;
-            animation: fadeIn 0.8s ease-out;
+            max-width: 700px;
+            position: relative;
+            z-index: 10;
+            animation: fadeIn 0.8s cubic-bezier(0.22, 1, 0.36, 1);
         }
 
-        .glass-card {
+        .card {
             background: var(--glass-bg);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid var(--glass-border);
-            border-radius: 20px;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--border);
+            border-radius: 24px;
             padding: 3rem;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            box-shadow: 0 40px 80px -20px rgba(0, 0, 0, 0.7);
             position: relative;
             overflow: hidden;
         }
 
-        .glass-card::before {
+        .card::before {
             content: '';
             position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: radial-gradient(circle, rgba(139, 92, 246, 0.1) 0%, transparent 60%);
-            pointer-events: none;
-            z-index: 0;
+            top: 0; left: 0; right: 0; height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 2.5rem;
+        }
+
+        .tag {
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--accent);
+            background: rgba(6, 182, 212, 0.1);
+            padding: 0.4em 1em;
+            border-radius: 99px;
+            display: inline-block;
+            margin-bottom: 1rem;
+            border: 1px solid rgba(6, 182, 212, 0.2);
         }
 
         h1 {
-            font-weight: 600;
-            font-size: 2rem;
-            margin-bottom: 2rem;
-            text-align: center;
-            letter-spacing: -0.025em;
-            background: linear-gradient(to right, #fff, #cbd5e1);
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, #fff 0%, #cbd5e1 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            position: relative;
-            z-index: 1;
+            letter-spacing: -0.03em;
         }
 
-        .form-group {
-            margin-bottom: 1.5rem;
-            position: relative;
-            z-index: 1;
-        }
-
-        label {
-            display: block;
-            margin-bottom: 0.5rem;
-            font-size: 0.875rem;
+        .subtitle {
             color: var(--text-muted);
+            font-size: 1rem;
+        }
+
+        /* Controls */
+        .input-group {
+            margin-bottom: 2rem;
+            position: relative;
+        }
+
+        .label {
+            display: block;
+            margin-bottom: 0.75rem;
+            font-size: 0.875rem;
             font-weight: 500;
+            color: var(--text-muted);
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .input-wrapper {
+            position: relative;
+            transition: transform 0.2s;
+        }
+
+        .input-wrapper:focus-within {
+            transform: scale(1.01);
         }
 
         input, textarea {
             width: 100%;
-            background: rgba(0, 0, 0, 0.2);
-            border: 1px solid var(--glass-border);
-            border-radius: 12px;
-            padding: 1rem;
-            color: white;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 1.25rem;
+            color: #fff;
             font-family: inherit;
             font-size: 1rem;
             transition: all 0.3s ease;
-            box-sizing: border-box; 
         }
 
         input:focus, textarea:focus {
             outline: none;
             border-color: var(--primary);
-            box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.2);
-            background: rgba(0, 0, 0, 0.4);
+            box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.15);
+            background: rgba(0, 0, 0, 0.5);
         }
 
         textarea {
-            resize: vertical;
+            resize: none;
             min-height: 120px;
         }
 
-        button {
-            width: 100%;
-            padding: 1rem;
-            background: var(--primary);
-            color: white;
-            border: none;
-            border-radius: 12px;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            position: relative;
-            z-index: 1;
-            margin-top: 1rem;
-        }
-
-        button:hover {
-            background: var(--primary-hover);
-            transform: translateY(-2px);
-            box-shadow: 0 10px 20px -5px rgba(139, 92, 246, 0.4);
-        }
-
-        button:active {
-            transform: translateY(0);
-        }
-
-        button:disabled {
-            opacity: 0.7;
-            cursor: not-allowed;
-        }
-
-        .result-area {
-            margin-top: 2rem;
-            padding: 1.5rem;
-            background: rgba(0, 0, 0, 0.3);
-            border-radius: 12px;
-            border: 1px solid var(--glass-border);
-            font-family: 'Courier New', Courier, monospace;
-            font-size: 0.9rem;
-            color: #bef264;
-            white-space: pre-wrap;
-            display: none;
-            animation: slideUp 0.5s ease-out;
-            position: relative;
-            z-index: 1;
-        }
-
-        .preset-btns {
+        /* Presets */
+        .presets {
             display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
+            gap: 12px;
+            margin-bottom: 2rem;
             flex-wrap: wrap;
-            position: relative;
-            z-index: 1;
         }
 
-        .preset-btn {
-            background: rgba(255,255,255,0.05);
-            border: 1px solid var(--glass-border);
-            padding: 0.5rem 1rem;
-            border-radius: 20px;
-            font-size: 0.8rem;
+        .preset-chip {
+            background: var(--surface-2);
+            border: 1px solid var(--border);
+            padding: 0.6rem 1.2rem;
+            border-radius: 12px;
             color: var(--text-muted);
+            font-size: 0.875rem;
             cursor: pointer;
-            transition: 0.2s;
-            margin-top: 0;
-            width: auto;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
-        .preset-btn:hover {
-            background: rgba(255,255,255,0.1);
+        .preset-chip:hover {
+            background: rgba(139, 92, 246, 0.1);
+            border-color: rgba(139, 92, 246, 0.3);
+            color: #fff;
+            transform: translateY(-2px);
+        }
+
+        .preset-chip svg {
+            width: 16px;
+            height: 16px;
+            opacity: 0.7;
+        }
+
+        /* Button */
+        .btn-main {
+            width: 100%;
+            background: linear-gradient(135deg, var(--primary) 0%, #7c3aed 100%);
+            border: none;
+            padding: 1.25rem;
+            border-radius: 16px;
             color: white;
+            font-weight: 600;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 10px 30px -10px var(--primary-glow);
+            position: relative;
+            overflow: hidden;
+            letter-spacing: 0.02em;
         }
 
-        .loading-spinner {
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 3px solid rgba(255,255,255,0.3);
-            border-radius: 50%;
-            border-top-color: white;
-            animation: spin 1s ease-in-out infinite;
-            margin-right: 10px;
-            vertical-align: middle;
+        .btn-main::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(rgba(255,255,255,0.1), transparent);
+            opacity: 0;
+            transition: opacity 0.2s;
         }
 
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
+        .btn-main:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 20px 40px -12px var(--primary-glow);
         }
 
-        @keyframes slideUp {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
+        .btn-main:hover::after {
+            opacity: 1;
         }
 
-        @keyframes spin {
-            to { transform: rotate(360deg); }
+        .btn-main:active {
+            transform: scale(0.98);
         }
 
-        .tag {
-            font-size: 0.7rem;
+        .btn-main:disabled {
+            opacity: 0.7;
+            cursor: wait;
+            filter: grayscale(1);
+        }
+
+        /* Results */
+        .results {
+            margin-top: 3rem;
+            display: none;
+            animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .result-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            transition: transform 0.2s;
+        }
+        
+        .result-card:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .result-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 0.75rem;
+            font-size: 0.9rem;
+            font-weight: 600;
             text-transform: uppercase;
             letter-spacing: 0.05em;
-            color: var(--text-muted);
-            margin-bottom: 1rem;
-            display: block;
-            text-align: center;
         }
+
+        .result-content {
+            line-height: 1.6;
+            color: var(--text-main);
+            font-size: 1.05rem;
+        }
+
+        .code-block {
+            font-family: 'JetBrains Mono', monospace;
+            background: #000;
+            padding: 1rem;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            color: #d4d4d8;
+            overflow-x: auto;
+            border: 1px solid var(--border);
+        }
+
+        /* Icons/Colors */
+        .icon-reason { color: #c084fc; }
+        .icon-summary { color: var(--success); }
+        .icon-raw { color: var(--text-muted); }
+
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            display: inline-block;
+            margin-right: 8px;
+            vertical-align: text-bottom;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
     </style>
 </head>
 <body>
 
 <div class="container">
-    <div class="glass-card">
-        <span class="tag">Semantic Agent Proxy</span>
-        <h1>AI Middleware</h1>
-
-        <div class="form-group">
-            <label>Target Agent URL</label>
-            <input type="text" id="targetUrl" placeholder="http://localhost:3001" value="http://localhost:3001">
+    <div class="card">
+        <div class="header">
+            <span class="tag">Inter-Agent Logic Core</span>
+            <h1>Nexus Proxy</h1>
+            <p class="subtitle">Semantic middleware for autonomous agent communication</p>
         </div>
 
-        <div class="preset-btns">
-            <button class="preset-btn" onclick="setPreset('http://localhost:3001', 'I want to cut my hair at 5pm')">SalonBot</button>
-            <button class="preset-btn" onclick="setPreset('http://localhost:3002', 'Borrow ISBN 978-3-16-148410-0 for a week')">LibraryBot</button>
+        <div class="input-group">
+            <label class="label">Target Agent URL</label>
+            <div class="input-wrapper">
+                <input type="text" id="targetUrl" value="http://localhost:3001" placeholder="e.g. http://localhost:3000">
+            </div>
         </div>
 
-        <div class="form-group">
-            <label>Your Intent</label>
-            <textarea id="userIntent" placeholder="Describe what you want to do in natural language..."></textarea>
+        <div class="presets">
+            <div class="preset-chip" onclick="setPreset('http://localhost:3001', 'I want to cut my hair at 5pm')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 7h-9M14 17H5M6 7l12 10M18 7l-9 8"/></svg>
+                SalonBot
+            </div>
+            <div class="preset-chip" onclick="setPreset('http://localhost:3002', 'Borrow ISBN 978-3-16-148410-0 for a week')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+                LibraryBot
+            </div>
         </div>
 
-        <button id="sendBtn" onclick="sendRequest()">Execute Request</button>
+        <div class="input-group">
+            <label class="label">User Intent</label>
+            <div class="input-wrapper">
+                <textarea id="userIntent" placeholder="Describe your request in natural language..."></textarea>
+            </div>
+        </div>
 
-        <div id="result" class="result-area"></div>
+        <button id="sendBtn" class="btn-main" onclick="sendRequest()">
+            Execute Protocol
+        </button>
+
+        <div id="result" class="results"></div>
     </div>
 </div>
 
 <script>
     function setPreset(url, intent) {
-        document.getElementById('targetUrl').value = url;
-        document.getElementById('userIntent').value = intent;
+        const urlInput = document.getElementById('targetUrl');
+        const intentInput = document.getElementById('userIntent');
+        
+        urlInput.value = url;
+        intentInput.value = intent;
+
+        // Flash effect
+        urlInput.style.borderColor = '#06b6d4';
+        intentInput.style.borderColor = '#06b6d4';
+        setTimeout(() => {
+            urlInput.style.borderColor = '';
+            intentInput.style.borderColor = '';
+        }, 300);
     }
 
     async function sendRequest() {
@@ -263,37 +379,81 @@
         const resultArea = document.getElementById('result');
 
         if (!targetUrl || !userIntent) {
-            alert("Please fill in both fields");
+            alert("Please provide both Target URL and Intent.");
             return;
         }
 
-        // UI Loading State
+        // Loading State
         btn.disabled = true;
-        btn.innerHTML = '<div class="loading-spinner"></div> Processing...';
+        btn.innerHTML = '<div class="spinner"></div> Processing Signal...';
         resultArea.style.display = 'none';
-        resultArea.textContent = '';
+        resultArea.innerHTML = '';
 
         try {
-            // Call the Proxy Server (assuming running on port 3000)
             const response = await fetch('http://localhost:3000/proxy/execute', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ targetUrl, userIntent })
             });
 
             const data = await response.json();
 
-            // Display Result
+            // Build UI
+            let html = '';
+
+            // 1. Reasoning Card
+            if (data.reasoning) {
+                html += `
+                    <div class="result-card" style="border-left: 3px solid #c084fc;">
+                        <div class="result-header icon-reason">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:8px;"><path d="M12 2a10 10 0 1 0 10 10 4 4 0 0 1-5-5 4 4 0 0 1-5-5"/></svg>
+                            AI Reasoning
+                        </div>
+                        <div class="result-content">${data.reasoning}</div>
+                    </div>
+                `;
+            }
+
+            // 2. Summary Card
+            if (data.summary) {
+                html += `
+                    <div class="result-card" style="border-left: 3px solid #10b981;">
+                        <div class="result-header icon-summary">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:8px;"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                            Outcome
+                        </div>
+                        <div class="result-content" style="font-weight: 500; font-size: 1.1rem; color: #fff;">
+                            ${data.summary}
+                        </div>
+                    </div>
+                `;
+            }
+
+            // 3. Raw Data Card (Collapsible logic could be added, but keeping visible for "developer" feel)
+            html += `
+                <div class="result-card">
+                    <div class="result-header icon-raw">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:8px;"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
+                        Payload Transmission (Source: ${data.source})
+                    </div>
+                    <div class="code-block">${JSON.stringify(data.target_response, null, 2)}</div>
+                </div>
+            `;
+
+            resultArea.innerHTML = html;
             resultArea.style.display = 'block';
-            resultArea.textContent = JSON.stringify(data, null, 2);
+
         } catch (error) {
+            resultArea.innerHTML = `
+                <div class="result-card" style="border-color: #ef4444; background: rgba(239, 68, 68, 0.1);">
+                    <div class="result-header" style="color: #ef4444;">Error</div>
+                    <div class="result-content">${error.message}</div>
+                </div>
+            `;
             resultArea.style.display = 'block';
-            resultArea.textContent = 'Error: ' + error.message;
         } finally {
             btn.disabled = false;
-            btn.innerText = 'Execute Request';
+            btn.innerHTML = 'Execute Protocol';
         }
     }
 </script>
