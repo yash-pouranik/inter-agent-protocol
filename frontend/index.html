@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Semantic AI Proxy</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #8b5cf6;
+            --primary-hover: #7c3aed;
+            --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-gradient);
+            color: var(--text-main);
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow-x: hidden;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 600px;
+            padding: 2rem;
+            animation: fadeIn 0.8s ease-out;
+        }
+
+        .glass-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 3rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .glass-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(139, 92, 246, 0.1) 0%, transparent 60%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        h1 {
+            font-weight: 600;
+            font-size: 2rem;
+            margin-bottom: 2rem;
+            text-align: center;
+            letter-spacing: -0.025em;
+            background: linear-gradient(to right, #fff, #cbd5e1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            position: relative;
+            z-index: 1;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-size: 0.875rem;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        input, textarea {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 1rem;
+            color: white;
+            font-family: inherit;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            box-sizing: border-box; 
+        }
+
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.2);
+            background: rgba(0, 0, 0, 0.4);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 120px;
+        }
+
+        button {
+            width: 100%;
+            padding: 1rem;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            z-index: 1;
+            margin-top: 1rem;
+        }
+
+        button:hover {
+            background: var(--primary-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px -5px rgba(139, 92, 246, 0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+
+        .result-area {
+            margin-top: 2rem;
+            padding: 1.5rem;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 12px;
+            border: 1px solid var(--glass-border);
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.9rem;
+            color: #bef264;
+            white-space: pre-wrap;
+            display: none;
+            animation: slideUp 0.5s ease-out;
+            position: relative;
+            z-index: 1;
+        }
+
+        .preset-btns {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            position: relative;
+            z-index: 1;
+        }
+
+        .preset-btn {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid var(--glass-border);
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: 0.2s;
+            margin-top: 0;
+            width: auto;
+        }
+
+        .preset-btn:hover {
+            background: rgba(255,255,255,0.1);
+            color: white;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 10px;
+            vertical-align: middle;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .tag {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+            margin-bottom: 1rem;
+            display: block;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="glass-card">
+        <span class="tag">Semantic Agent Proxy</span>
+        <h1>AI Middleware</h1>
+
+        <div class="form-group">
+            <label>Target Agent URL</label>
+            <input type="text" id="targetUrl" placeholder="http://localhost:3001" value="http://localhost:3001">
+        </div>
+
+        <div class="preset-btns">
+            <button class="preset-btn" onclick="setPreset('http://localhost:3001', 'I want to cut my hair at 5pm')">SalonBot</button>
+            <button class="preset-btn" onclick="setPreset('http://localhost:3002', 'Borrow ISBN 978-3-16-148410-0 for a week')">LibraryBot</button>
+        </div>
+
+        <div class="form-group">
+            <label>Your Intent</label>
+            <textarea id="userIntent" placeholder="Describe what you want to do in natural language..."></textarea>
+        </div>
+
+        <button id="sendBtn" onclick="sendRequest()">Execute Request</button>
+
+        <div id="result" class="result-area"></div>
+    </div>
+</div>
+
+<script>
+    function setPreset(url, intent) {
+        document.getElementById('targetUrl').value = url;
+        document.getElementById('userIntent').value = intent;
+    }
+
+    async function sendRequest() {
+        const targetUrl = document.getElementById('targetUrl').value;
+        const userIntent = document.getElementById('userIntent').value;
+        const btn = document.getElementById('sendBtn');
+        const resultArea = document.getElementById('result');
+
+        if (!targetUrl || !userIntent) {
+            alert("Please fill in both fields");
+            return;
+        }
+
+        // UI Loading State
+        btn.disabled = true;
+        btn.innerHTML = '<div class="loading-spinner"></div> Processing...';
+        resultArea.style.display = 'none';
+        resultArea.textContent = '';
+
+        try {
+            // Call the Proxy Server (assuming running on port 3000)
+            const response = await fetch('http://localhost:3000/proxy/execute', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ targetUrl, userIntent })
+            });
+
+            const data = await response.json();
+
+            // Display Result
+            resultArea.style.display = 'block';
+            resultArea.textContent = JSON.stringify(data, null, 2);
+        } catch (error) {
+            resultArea.style.display = 'block';
+            resultArea.textContent = 'Error: ' + error.message;
+        } finally {
+            btn.disabled = false;
+            btn.innerText = 'Execute Request';
+        }
+    }
+</script>
+
+</body>
+</html>
