@@ -21,7 +21,7 @@ async function generatePayload(userIntent, apiDocs) {
                     
                     Output Format (JSON Only):
                     {
-                        "reasoning": "Explain WHY you chose this endpoint and payload in 1 sentence.",
+                        "reasoning": "Explain WHY you chose this endpoint and payload. Use **bold** for importance.",
                         "endpoint": "/path/to/resource",
                         "method": "POST",
                         "body": { ...payload fields... }
@@ -52,7 +52,10 @@ async function summarizeResponse(userIntent, apiResponse) {
                     role: "system",
                     content: `Act as a helpful AI assistant.
                     Task: Write a friendly, natural language summary of the result.
-                    Keep it short (1-2 sentences).`
+                    Rules:
+                    - Use **bold** for key details (names, times, IDs).
+                    - Use lists (- item) if there are multiple details.
+                    - Keep it concise (2-3 sentences).`
                 },
                 {
                     role: "user",
@@ -92,7 +95,7 @@ async function decomposeIntent(userIntent, availableAgents) {
                         {
                             "agentName": "Name of agent",
                             "subIntent": "Specific instruction for this agent",
-                            "reasoning": "Why this agent for this part"
+                            "reasoning": "Why this agent? Use **bold** for emphasis."
                         }
                     ]
                     

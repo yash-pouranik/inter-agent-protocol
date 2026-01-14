@@ -447,7 +447,12 @@
             btn.innerHTML = 'Execute Protocol';
         }
     }
+    </script>
 
+    <!-- Markdown Parser -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+    <script>
     function handleStreamEvent(event, container) {
         // Remove old status indicators if any
         const oldStatus = container.querySelector('.status-pill');
@@ -490,6 +495,10 @@
         }
 
         else if (event.type === 'result') {
+            // Use Marked to parse Markdown
+            const summaryHtml = marked.parse(event.summary);
+            const reasoningHtml = event.reasoning ? marked.parse(event.reasoning) : '';
+
             const resultHtml = `
                 <div class="result-card" style="border-left: 3px solid #10b981; margin-bottom: 1rem; animation: fadeIn 0.5s ease;">
                     <div class="result-header icon-summary" style="display:flex; justify-content:space-between;">
@@ -501,14 +510,14 @@
                     </div>
                     
                     <div class="result-content">
-                         <div style="font-size: 1.1em; font-weight: 500; color: #fff; margin-bottom: 1rem;">
-                            ${event.summary}
+                         <div style="font-size: 1.05em; color: #e2e8f0; margin-bottom: 1rem; line-height: 1.6;">
+                            ${summaryHtml}
                         </div>
                         
                         ${event.reasoning ? `
-                            <div style="background: rgba(0,0,0,0.3); padding: 10px; border-radius: 8px; font-size: 0.9em; margin-bottom: 1rem; border-left: 2px solid #a78bfa;">
-                                <strong style="color: #a78bfa;">Reasoning:</strong><br>
-                                ${event.reasoning.replace(/\n/g, '<br>')}
+                            <div style="background: rgba(0,0,0,0.3); padding: 12px; border-radius: 8px; font-size: 0.9em; margin-bottom: 1rem; border-left: 2px solid #a78bfa; color: #cbd5e1;">
+                                <strong style="color: #a78bfa; display:block; margin-bottom:4px;">Reasoning:</strong>
+                                ${reasoningHtml}
                             </div>
                         ` : ''}
 
