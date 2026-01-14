@@ -1,23 +1,37 @@
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 
-// Initialize Gemini (User must provide API key in .env)
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+
+// Helper: Retry Wrapper
+async function retryOperation(operation, maxRetries = 3, delayMs = 1000) {
+    for (let i = 0; i < maxRetries; i++) {
+        try {
+            return await operation();
+        } catch (error) {
+            if (error.message.includes('429') || error.message.includes('quota')) {
+                console.warn(`[Gemini] Rate limited. Retrying in ${delayMs}ms... (Attempt ${i + 1}/${maxRetries})`);
+                await new Promise(resolve => setTimeout(resolve, delayMs));
+                delayMs *= 2; // Exponential backoff
+            } else {
+                throw error;
+            }
+        }
+    }
+    throw new Error(`Operation failed after ${maxRetries} retries due to rate limiting.`);
+}
 
 async function generatePayload(userIntent, apiDocs) {
     try {
+        // Use standard Flash model (Higher quotas)
         const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
         const prompt = `
             Act as an API integration expert.
             
-            Based on the User Intent and the provided Target API Documentation, generate a valid JSON object describing the API call to be made.
-            
             User Intent: "${userIntent}"
+            API Documentation: ${apiDocs}
             
-            Target API Documentation:
-            """
-            ${apiDocs}
-            """
+            Task: Convert the User Intent into a VALID JSON Payload for the API.
             
             Output Format (JSON Only):
             {
@@ -26,26 +40,19 @@ async function generatePayload(userIntent, apiDocs) {
                 "method": "POST",
                 "body": { ...payload fields... }
             }
-
-            Rules:
-            1. Output MUST be valid JSON only.
-            2. Do NOT include markdown code blocks (like \`\`\`json).
-            3. Do NOT include any explanation or extra text outside the JSON.
-            4. If the user intent is missing information required by the API, use reasonable defaults or best guesses based on the intent (e.g. if "tomorrow", calculate the date).
-            5. Ensure data types match the documentation (e.g. integers for numbers).
         `;
 
-        const result = await model.generateContent(prompt);
-        const response = await result.response;
-        const text = response.text();
+        return await retryOperation(async () => {
+            const result = await model.generateContent(prompt);
+            const response = await result.response;
+            const text = response.text();
+            const cleanJson = text.replace(/```json/g, '').replace(/```/g, '').trim();
+            return JSON.parse(cleanJson);
+        });
 
-        // Clean up potential markdown formatting if Gemini adds it despite instructions
-        const cleanJson = text.replace(/```json/g, '').replace(/```/g, '').trim();
-
-        return JSON.parse(cleanJson);
     } catch (error) {
-        console.error("Gemini Generation Error:", error);
-        throw new Error("Failed to generate payload via Gemini.");
+        console.error("Gemini Payload Error:", error);
+        throw error;
     }
 }
 
@@ -66,13 +73,67 @@ async function summarizeResponse(userIntent, apiResponse) {
             - Keep it short (1-2 sentences).
         `;
 
-        const result = await model.generateContent(prompt);
-        const response = await result.response;
-        return response.text().trim();
+        return await retryOperation(async () => {
+            const result = await model.generateContent(prompt);
+            const response = await result.response;
+            return response.text();
+        });
+
     } catch (error) {
         console.error("Gemini Summary Error:", error);
-        return "I completed the request, but couldn't summarize the result. Please check the raw data.";
+        return "Action completed (Summary unavailable).";
     }
 }
 
-module.exports = { generatePayload, summarizeResponse };
+async function decomposeIntent(userIntent, availableAgents) {
+    try {
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+        const prompt = `
+            Act as a Strategic Orchestrator.
+            
+            User Intent: "${userIntent}"
+            
+            Available Agents:
+            ${JSON.stringify(availableAgents, null, 2)}
+            
+            Task: 
+            1. Analyze the intent. Is it a single action or multiple actions?
+            2. Break it down into clear sub-tasks.
+            3. For EACH sub-task, select the best agent.
+            
+            Output Format (JSON Array):
+            [
+                {
+                    "agentName": "Name of agent",
+                    "subIntent": "Specific instruction for this agent",
+                    "reasoning": "Why this agent for this part"
+                },
+                ...
+            ]
+            
+            Example: "I want a haircut and a book"
+            Result:
+            [
+                { "agentName": "SalonBot", "subIntent": "Book haircut", "reasoning": "..." },
+                { "agentName": "LibraryBot", "subIntent": "Borrow book", "reasoning": "..." }
+            ]
+            
+            If NO agent matches a part, return an empty list or omit that part.
+        `;
+
+        return await retryOperation(async () => {
+            const result = await model.generateContent(prompt);
+            const response = await result.response;
+            const text = response.text();
+            const cleanJson = text.replace(/```json/g, '').replace(/```/g, '').trim();
+            return JSON.parse(cleanJson);
+        });
+
+    } catch (error) {
+        console.error("Gemini Decomposition Error:", error);
+        return [];
+    }
+}
+
+module.exports = { generatePayload, summarizeResponse, decomposeIntent };
