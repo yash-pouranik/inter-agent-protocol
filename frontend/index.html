@@ -323,20 +323,23 @@
         </div>
 
         <div class="input-group">
-            <label class="label">Target Agent URL</label>
+            <label class="label">
+                Target Agent URL
+                <span class="tag" style="margin:0; font-size:0.6em; padding: 2px 8px; border-radius: 4px;">Optional (Auto-Discovery Mode)</span>
+            </label>
             <div class="input-wrapper">
-                <input type="text" id="targetUrl" value="http://localhost:3001" placeholder="e.g. http://localhost:3000">
+                <input type="text" id="targetUrl" placeholder="Leave empty to let AI find the agent...">
             </div>
         </div>
 
         <div class="presets">
-            <div class="preset-chip" onclick="setPreset('http://localhost:3001', 'I want to cut my hair at 5pm')">
+            <div class="preset-chip" onclick="setPreset('', 'I want to cut my hair at 5pm')">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 7h-9M14 17H5M6 7l12 10M18 7l-9 8"/></svg>
-                SalonBot
+                Find Haircut Agent
             </div>
-            <div class="preset-chip" onclick="setPreset('http://localhost:3002', 'Borrow ISBN 978-3-16-148410-0 for a week')">
+            <div class="preset-chip" onclick="setPreset('', 'Borrow ISBN 978-3-16-148410-0 for a week')">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
-                LibraryBot
+                Find Library Agent
             </div>
         </div>
 
@@ -364,10 +367,8 @@
         intentInput.value = intent;
 
         // Flash effect
-        urlInput.style.borderColor = '#06b6d4';
         intentInput.style.borderColor = '#06b6d4';
         setTimeout(() => {
-            urlInput.style.borderColor = '';
             intentInput.style.borderColor = '';
         }, 300);
     }
@@ -378,16 +379,16 @@
         const btn = document.getElementById('sendBtn');
         const resultArea = document.getElementById('result');
 
-        if (!targetUrl || !userIntent) {
-            alert("Please provide both Target URL and Intent.");
+        if (!userIntent) {
+            alert("Please provide an Intent.");
             return;
         }
 
         // Loading State
         btn.disabled = true;
         btn.innerHTML = '<div class="spinner"></div> Processing Signal...';
-        resultArea.style.display = 'none';
-        resultArea.innerHTML = '';
+        resultArea.style.display = 'block';
+        resultArea.innerHTML = ''; // Start clean
 
         try {
             const response = await fetch('http://localhost:3000/proxy/execute', {
@@ -396,64 +397,149 @@
                 body: JSON.stringify({ targetUrl, userIntent })
             });
 
-            const data = await response.json();
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            let buffer = '';
 
-            // Build UI
-            let html = '';
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
 
-            // 1. Reasoning Card
-            if (data.reasoning) {
-                html += `
-                    <div class="result-card" style="border-left: 3px solid #c084fc;">
-                        <div class="result-header icon-reason">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:8px;"><path d="M12 2a10 10 0 1 0 10 10 4 4 0 0 1-5-5 4 4 0 0 1-5-5"/></svg>
-                            AI Reasoning
-                        </div>
-                        <div class="result-content">${data.reasoning}</div>
-                    </div>
-                `;
+                buffer += decoder.decode(value, { stream: true });
+                
+                let boundary = buffer.indexOf('\n');
+                while (boundary !== -1) {
+                    const line = buffer.substring(0, boundary).trim();
+                    buffer = buffer.substring(boundary + 1);
+                    
+                    if (line) {
+                        try {
+                            const event = JSON.parse(line);
+                            handleStreamEvent(event, resultArea);
+                        } catch (e) {
+                            console.warn("Standard Parse Failed:", e);
+                            // Fallback: Check for merged JSONs like }{
+                            const fixedLine = line.replace(/}{/g, '}\n{');
+                            const parts = fixedLine.split('\n');
+                            for (const part of parts) {
+                                try {
+                                    handleStreamEvent(JSON.parse(part), resultArea);
+                                } catch (e2) {
+                                     console.error("Fatal Parse Error. Line:", part);
+                                     resultArea.innerHTML += `<div style="color:red; font-size:0.8em; padding:5px;">Parse Error: ${e2.message} <br> Raw: ${part}</div>`;
+                                }
+                            }
+                        }
+                    }
+                    boundary = buffer.indexOf('\n');
+                }
             }
-
-            // 2. Summary Card
-            if (data.summary) {
-                html += `
-                    <div class="result-card" style="border-left: 3px solid #10b981;">
-                        <div class="result-header icon-summary">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:8px;"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-                            Outcome
-                        </div>
-                        <div class="result-content" style="font-weight: 500; font-size: 1.1rem; color: #fff;">
-                            ${data.summary}
-                        </div>
-                    </div>
-                `;
-            }
-
-            // 3. Raw Data Card (Collapsible logic could be added, but keeping visible for "developer" feel)
-            html += `
-                <div class="result-card">
-                    <div class="result-header icon-raw">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:8px;"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
-                        Payload Transmission (Source: ${data.source})
-                    </div>
-                    <div class="code-block">${JSON.stringify(data.target_response, null, 2)}</div>
-                </div>
-            `;
-
-            resultArea.innerHTML = html;
-            resultArea.style.display = 'block';
 
         } catch (error) {
-            resultArea.innerHTML = `
+            resultArea.innerHTML += `
                 <div class="result-card" style="border-color: #ef4444; background: rgba(239, 68, 68, 0.1);">
-                    <div class="result-header" style="color: #ef4444;">Error</div>
+                    <div class="result-header" style="color: #ef4444;">Connection Error</div>
                     <div class="result-content">${error.message}</div>
                 </div>
             `;
-            resultArea.style.display = 'block';
         } finally {
             btn.disabled = false;
             btn.innerHTML = 'Execute Protocol';
+        }
+    }
+
+    function handleStreamEvent(event, container) {
+        // Remove old status indicators if any
+        const oldStatus = container.querySelector('.status-pill');
+        if (oldStatus) oldStatus.remove();
+
+        if (event.type === 'status') {
+            const statusDiv = document.createElement('div');
+            statusDiv.className = 'status-pill';
+            statusDiv.innerHTML = `<div class="spinner" style="width:12px; height:12px; border-width:2px; margin-right:8px;"></div> ${event.message}`;
+            statusDiv.style.cssText = `
+                padding: 8px 16px; 
+                background: rgba(139, 92, 246, 0.1); 
+                border: 1px solid rgba(139, 92, 246, 0.3); 
+                border-radius: 20px; 
+                color: #a78bfa; 
+                font-size: 0.9em; 
+                display: inline-flex; 
+                align-items: center; 
+                margin-bottom: 1rem;
+            `;
+            container.appendChild(statusDiv);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        else if (event.type === 'plan') {
+            const planHtml = `
+                <div class="result-card" style="border-left: 3px solid #3b82f6; margin-bottom: 1rem;">
+                    <div class="result-header" style="color: #60a5fa;">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:8px;"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+                        Orchestration Plan
+                    </div>
+                    <div class="result-content">
+                        ${event.tasks.map(t => `<div style="margin-bottom:4px;"><strong>${t.agentName}:</strong> ${t.subIntent}</div>`).join('')}
+                    </div>
+                </div>
+            `;
+            const div = document.createElement('div');
+            div.innerHTML = planHtml;
+            container.appendChild(div);
+        }
+
+        else if (event.type === 'result') {
+            const resultHtml = `
+                <div class="result-card" style="border-left: 3px solid #10b981; margin-bottom: 1rem; animation: fadeIn 0.5s ease;">
+                    <div class="result-header icon-summary" style="display:flex; justify-content:space-between;">
+                        <span>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:8px;"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                            ${event.agent} Completed
+                        </span>
+                        <span style="font-size:0.8em; opacity:0.7;">SUCCESS</span>
+                    </div>
+                    
+                    <div class="result-content">
+                         <div style="font-size: 1.1em; font-weight: 500; color: #fff; margin-bottom: 1rem;">
+                            ${event.summary}
+                        </div>
+                        
+                        ${event.reasoning ? `
+                            <div style="background: rgba(0,0,0,0.3); padding: 10px; border-radius: 8px; font-size: 0.9em; margin-bottom: 1rem; border-left: 2px solid #a78bfa;">
+                                <strong style="color: #a78bfa;">Reasoning:</strong><br>
+                                ${event.reasoning.replace(/\n/g, '<br>')}
+                            </div>
+                        ` : ''}
+
+                         <div style="margin-top: 10px;">
+                            <strong style="color: #94a3b8; font-size: 0.8em; cursor:pointer;" onclick="this.nextElementSibling.style.display = this.nextElementSibling.style.display === 'none' ? 'block' : 'none'">
+                                ▶ Show Raw Data
+                            </strong>
+                            <pre style="display:none; margin-top: 0.5rem; background: rgba(0,0,0,0.4); padding: 10px; border-radius: 8px; overflow-x: auto; font-size: 0.8em;">${JSON.stringify(event.result, null, 2)}</pre>
+                        </div>
+                    </div>
+                </div>
+            `;
+            const div = document.createElement('div');
+            div.innerHTML = resultHtml;
+            container.appendChild(div);
+            container.scrollTop = container.scrollHeight;
+        }
+        
+        else if (event.type === 'done') {
+            const doneDiv = document.createElement('div');
+            doneDiv.innerHTML = `<div style="text-align:center; color:#10b981; font-weight:bold; margin-top:20px;">✨ All Tasks Completed</div>`;
+            container.appendChild(doneDiv);
+        }
+        
+        else if (event.type === 'error') {
+             container.innerHTML += `
+                <div class="result-card" style="border-color: #ef4444; background: rgba(239, 68, 68, 0.1);">
+                    <div class="result-header" style="color: #ef4444;">Error</div>
+                    <div class="result-content">${event.message}</div>
+                </div>
+            `;
         }
     }
 </script>

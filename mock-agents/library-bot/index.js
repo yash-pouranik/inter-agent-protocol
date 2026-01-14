@@ -45,6 +45,19 @@ app.post('/loan/borrow', (req, res) => {
     });
 });
 
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
     console.log(`LibraryBot listening on port ${PORT}`);
+
+    // Auto-Register
+    try {
+        const axios = require('axios');
+        await axios.post('http://localhost:3000/registry/register', {
+            name: "LibraryBot",
+            url: `http://localhost:${PORT}`,
+            description: "Manages book loans. Can borrow books given an ISBN and duration."
+        });
+        console.log("[LibraryBot] Registered with Proxy successfully.");
+    } catch (e) {
+        console.log("[LibraryBot] Registration failed (Proxy might be down):", e.message);
+    }
 });
